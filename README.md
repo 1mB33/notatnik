@@ -1,0 +1,2 @@
+## Required dependencies
+- sqlpp11
