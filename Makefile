@@ -1,38 +1,52 @@
 INTERMEDIATE_DIR := intermediate
 LIB_DATABASE_MANAGER_SRC_DIR := database_manager/src
-LIB_DIR := lib
+LIB_OUT_DIR := lib
 APP_SRC_DIR := app/src
 BIN_OUT_DIR := bin/application
 
 CXX := g++
 CXXFLAGS := -Wall -Wextra 
+DATABASE_MANAGER_SOURCES := $(wildcard $(LIB_DATABASE_MANAGER_SRC_DIR)/*.cpp)
+DATABASE_MANAGER_OBJECTS := $(patsubst $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp, $(INTERMEDIATE_DIR)/%.o, $(DATABASE_MANAGER_SOURCES))
 APP_SOURCES := $(wildcard $(APP_SRC_DIR)/*.cpp)
 APP_OBJECTS := $(patsubst $(APP_SRC_DIR)/%.cpp, $(INTERMEDIATE_DIR)/%.o, $(APP_SOURCES))
 
 .DEFAULT_GOAL := all
 
 run: all
-	$(APP_DIR)/application
+	$(BIN_OUT_DIR)/application
 
-all: build_app
+all: application
 
-build_app: $(APP_OBJECTS)
-	$(CXX) $(CXXFLAGS) \
+application: $(APP_OBJECTS)
+	$(CXX) \
+		-L$(LIB_OUT_DIR) \
+		-ldatabase_manager -Wl,-rpath,$(LIB_OUT_DIR) \
 		$^ -o $(BIN_OUT_DIR)/$@
 
-$(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile out_dirs
+$(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile out_dirs database_manager
 	$(CXX) $(CXXFLAGS) \
-		-I $(LIB_DATABASE_MANAGER_SRC)/ \
-		-L$(LIB_DIR) \
-		-ldatabase_manager -Wl,-rpath,$(pwd)$(LIB_DIR) \
+		-c \
+		-I $(LIB_DATABASE_MANAGER_SRC_DIR)/ \
+		$< -o $@
+
+database_manager: $(DATABASE_MANAGER_OBJECTS)
+	$(CXX) \
+		-dynamiclib -fPIC \
+		$^ -o $(LIB_OUT_DIR)/lib$@.dylib
+
+$(INTERMEDIATE_DIR)/%.o: $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp Makefile out_dirs
+	$(CXX) $(CXXFLAGS) \
+		-c \
+		-D_LIB_WITH_STATE_EXPORTS \
 		$< -o $@
 
 out_dirs:
 	mkdir -p $(BIN_OUT_DIR)
-	mkdir -p $(LIB_DIR)
+	mkdir -p $(LIB_OUT_DIR)
 	mkdir -p $(INTERMEDIATE_DIR)
 
 clean: 
 	rm -fr $(BIN_DIR)
-	rm -fr $(LIB_DIR)
+	rm -fr $(LIB_OUT_DIR)
 	rm -fr $(INTERMEDIATE_DIR)
