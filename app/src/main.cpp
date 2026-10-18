@@ -7,7 +7,7 @@ int main( int, char *[] )
 {
     cout << "Starting" << endl;
 
-    InitializeState();
+    DbMan::InitializeState();
 
     cout << "Exiting" << endl;
     return 0;
