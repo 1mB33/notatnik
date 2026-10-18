@@ -38,6 +38,7 @@ $(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile out_dirs database_manager
 database_manager: $(DATABASE_MANAGER_OBJECTS)
 	$(CXX) \
 		-shared \
+		-lpq \
 		$^ -o $(LIB_OUT_DIR)/lib$@.so
 
 $(INTERMEDIATE_DIR)/%.o: $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp Makefile out_dirs
