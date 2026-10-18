@@ -2,4 +2,9 @@
 
 #include "import_export.hpp"
 
-_STATE_API int fn();
+namespace DbMan
+{
+
+_STATE_API void InitializeState();
+
+}

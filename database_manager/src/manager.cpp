@@ -6,8 +6,8 @@
 
 struct State
 {
-    using connection        = sqlpp::postgresql::connection;
-    using connection_config = sqlpp::postgresql::connection_config;
+    using Connection        = sqlpp::postgresql::connection;
+    using Connection_config = sqlpp::postgresql::connection_config;
 
     State();
     ~State() noexcept = default;
@@ -17,15 +17,20 @@ struct State
     State( const State & ) noexcept            = delete;
     State &operator=( const State & ) noexcept = delete;
 
-    connection_config m_Config;
-    connection        m_Db;
+    Connection_config Config;
+    Connection        Db;
 };
 
 State::State() {}
 
 static State g_State = {};
 
-int fn()
+void DbMan::InitializeState()
 {
-    return 1;
+    g_State.Config.dbname   = "notepad_dev_db";
+    g_State.Config.user     = "dev";
+    g_State.Config.password = "dev";
+    g_State.Config.debug    = true;
+
+    g_State.Db = State::Connection( g_State.Config );
 }
