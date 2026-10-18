@@ -32,7 +32,7 @@ $(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile out_dirs database_manager
 
 database_manager: $(DATABASE_MANAGER_OBJECTS)
 	$(CXX) \
-		-dynamiclib -fPIC \
+		-shared -fPIC \
 		$^ -o $(LIB_OUT_DIR)/lib$@.dylib
 
 $(INTERMEDIATE_DIR)/%.o: $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp Makefile out_dirs
