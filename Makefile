@@ -32,12 +32,13 @@ $(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile out_dirs database_manager
 
 database_manager: $(DATABASE_MANAGER_OBJECTS)
 	$(CXX) \
-		-shared -fPIC \
-		$^ -o $(LIB_OUT_DIR)/lib$@.dylib
+		-shared \
+		$^ -o $(LIB_OUT_DIR)/lib$@.so
 
 $(INTERMEDIATE_DIR)/%.o: $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp Makefile out_dirs
 	$(CXX) $(CXXFLAGS) \
 		-c \
+		-fPIC \
 		-D_LIB_WITH_STATE_EXPORTS \
 		$< -o $@
 
