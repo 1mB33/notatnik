@@ -17,8 +17,8 @@ ENV_DB_USER := "dev"
 ENV_DB_PASS := "dev"
 
 CXX := g++
-ifeq (DEBUG, 1)
-	CXXFLAGS = -Wall -Wextra 
+ifeq ($(DEBUG), 1)
+	CXXFLAGS = -g -Wall -Wextra 
 else
 	CXXFLAGS := -Wall -Wextra -O2
 endif
