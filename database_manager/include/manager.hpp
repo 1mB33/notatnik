@@ -7,4 +7,6 @@ namespace DbMan
 
 _STATE_API void InitializeState();
 
+_STATE_API void CreateNote();
+
 }
