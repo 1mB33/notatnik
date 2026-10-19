@@ -2,3 +2,4 @@
 - sqlpp11
 - postgresql
 - g++
+- make
