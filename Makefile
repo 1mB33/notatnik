@@ -1,20 +1,32 @@
-INTERMEDIATE_DIR := intermediate
+DEBUG ?= 0
 LIB_DATABASE_MANAGER_INCLUDE_DIR := database_manager/include
 LIB_DATABASE_MANAGER_SRC_DIR := database_manager/src
-LIB_OUT_DIR := lib
 APP_SRC_DIR := app/src
-BIN_OUT_DIR := bin/application
+ifeq ($(DEBUG), 1)
+	BIN_OUT_DIR = bin/debug
+	LIB_OUT_DIR = lib/debug
+	INTERMEDIATE_DIR = intermediate/debug
+else
+	BIN_OUT_DIR = bin
+	LIB_OUT_DIR = lib
+	INTERMEDIATE_DIR = intermediate
+endif
 
 ENV_DB_NAME := "notepad_dev_db"
 ENV_DB_USER := "dev"
 ENV_DB_PASS := "dev"
 
 CXX := g++
-CXXFLAGS := -Wall -Wextra 
+ifeq (DEBUG, 1)
+	CXXFLAGS = -Wall -Wextra 
+else
+	CXXFLAGS := -Wall -Wextra -O2
+endif
 DATABASE_MANAGER_SOURCES := $(wildcard $(LIB_DATABASE_MANAGER_SRC_DIR)/*.cpp)
 DATABASE_MANAGER_OBJECTS := $(patsubst $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp, $(INTERMEDIATE_DIR)/%.o, $(DATABASE_MANAGER_SOURCES))
 APP_SOURCES := $(wildcard $(APP_SRC_DIR)/*.cpp)
 APP_OBJECTS := $(patsubst $(APP_SRC_DIR)/%.cpp, $(INTERMEDIATE_DIR)/%.o, $(APP_SOURCES))
+
 
 .DEFAULT_GOAL := all
 
@@ -22,6 +34,12 @@ run: all
 	$(BIN_OUT_DIR)/application
 
 all: application
+
+run_debug: 
+	DEBUG=1 make run
+
+all_debug: 
+	DEBUG=1 make all
 
 application: $(APP_OBJECTS)
 	$(CXX) \
@@ -55,6 +73,6 @@ out_dirs:
 	mkdir -p $(INTERMEDIATE_DIR)
 
 clean: 
-	rm -fr $(BIN_DIR)
+	rm -fr $(BIN_OUT_DIR)
 	rm -fr $(LIB_OUT_DIR)
 	rm -fr $(INTERMEDIATE_DIR)
