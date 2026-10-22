@@ -1,4 +1,7 @@
 DEBUG ?= 0
+LIB_DATABASE_MANAGER_INCLUDE :=
+LIB_DATABASE_MANAGER_LIBS_PATHS :=
+LIB_DATABASE_MANAGER_LIBS :=
 LIB_DATABASE_MANAGER_INCLUDE_DIR := database_manager/include
 LIB_DATABASE_MANAGER_SRC_DIR := database_manager/src
 APP_SRC_DIR := app/src
@@ -15,6 +18,20 @@ endif
 ENV_DB_NAME := "notepad_dev_db"
 ENV_DB_USER := "dev"
 ENV_DB_PASS := "dev"
+
+ifeq ($(OS),Windows_NT)
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+		LIB_DATABASE_MANAGER_LIBS += -lpq
+    endif
+    ifeq ($(UNAME_S),Darwin)
+		LIB_DATABASE_MANAGER_LIBS_PATHS += -L/opt/homebrew/opt/libpq/lib
+		LIB_DATABASE_MANAGER_LIBS += -lpq
+		LIB_DATABASE_MANAGER_INCLUDE += /opt/homebrew/opt/libpq/include
+    endif
+endif
+
 
 CXX := g++
 ifeq ($(DEBUG), 1)
@@ -56,13 +73,15 @@ $(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile out_dirs database_manager
 database_manager: $(DATABASE_MANAGER_OBJECTS)
 	$(CXX) \
 		-shared \
-		-lpq \
+		$(LIB_DATABASE_MANAGER_LIBS) \
+		$(LIB_DATABASE_MANAGER_LIBS_PATHS) \
 		$^ -o $(LIB_OUT_DIR)/lib$@.so
 
 $(INTERMEDIATE_DIR)/%.o: $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp Makefile out_dirs
 	$(CXX) $(CXXFLAGS) \
 		-c \
 		-fPIC \
+		-I $(LIB_DATABASE_MANAGER_INCLUDE)/ \
 		-I $(LIB_DATABASE_MANAGER_INCLUDE_DIR)/ \
 		-D_LIB_WITH_STATE_EXPORTS \
 		$< -o $@
