@@ -1,14 +1,17 @@
 DEBUG ?= 0
+PRE_PROCESSOR_MACROS :=
 LIB_DATABASE_MANAGER_INCLUDE :=
 LIB_DATABASE_MANAGER_LIBS_PATHS :=
 LIB_DATABASE_MANAGER_LIBS :=
 LIB_DATABASE_MANAGER_INCLUDE_DIR := database_manager/include
 LIB_DATABASE_MANAGER_SRC_DIR := database_manager/src
+LIB_HTTP_INCLUDE_DIR := cpp-httplib
 APP_SRC_DIR := app/src
 ifeq ($(DEBUG), 1)
 	BIN_OUT_DIR = bin/debug
 	LIB_OUT_DIR = lib/debug
 	INTERMEDIATE_DIR = intermediate/debug
+	PRE_PROCESSOR_MACROS += -D _DEBUG
 else
 	BIN_OUT_DIR = bin
 	LIB_OUT_DIR = lib
@@ -35,9 +38,9 @@ endif
 
 CXX := g++
 ifeq ($(DEBUG), 1)
-	CXXFLAGS = -g -Wall -Wextra 
+	CXXFLAGS = -g -Wall -Wextra -std=c++17
 else
-	CXXFLAGS := -Wall -Wextra -O2
+	CXXFLAGS := -Wall -Wextra -O2 -std=c++17
 endif
 DATABASE_MANAGER_SOURCES := $(wildcard $(LIB_DATABASE_MANAGER_SRC_DIR)/*.cpp)
 DATABASE_MANAGER_OBJECTS := $(patsubst $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp, $(INTERMEDIATE_DIR)/%.o, $(DATABASE_MANAGER_SOURCES))
@@ -50,7 +53,7 @@ APP_OBJECTS := $(patsubst $(APP_SRC_DIR)/%.cpp, $(INTERMEDIATE_DIR)/%.o, $(APP_S
 run: all
 	$(BIN_OUT_DIR)/application
 
-all: application
+all: out_dirs application
 
 run_debug: 
 	DEBUG=1 make run
@@ -64,10 +67,12 @@ application: $(APP_OBJECTS)
 		-ldatabase_manager -Wl,-rpath,$(LIB_OUT_DIR) \
 		$^ -o $(BIN_OUT_DIR)/$@
 
-$(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile out_dirs database_manager
+$(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile database_manager
 	$(CXX) $(CXXFLAGS) \
 		-c \
+		$(PRE_PROCESSOR_MACROS) \
 		-I $(LIB_DATABASE_MANAGER_INCLUDE_DIR)/ \
+		-I $(LIB_HTTP_INCLUDE_DIR)/ \
 		$< -o $@
 
 database_manager: $(DATABASE_MANAGER_OBJECTS)
@@ -77,10 +82,11 @@ database_manager: $(DATABASE_MANAGER_OBJECTS)
 		$(LIB_DATABASE_MANAGER_LIBS_PATHS) \
 		$^ -o $(LIB_OUT_DIR)/lib$@.so
 
-$(INTERMEDIATE_DIR)/%.o: $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp Makefile out_dirs
+$(INTERMEDIATE_DIR)/%.o: $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp Makefile 
 	$(CXX) $(CXXFLAGS) \
 		-c \
 		-fPIC \
+		$(PRE_PROCESSOR_MACROS) \
 		-I $(LIB_DATABASE_MANAGER_INCLUDE)/ \
 		-I $(LIB_DATABASE_MANAGER_INCLUDE_DIR)/ \
 		-D_LIB_WITH_STATE_EXPORTS \
