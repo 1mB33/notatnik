@@ -34,6 +34,7 @@ struct State
     Connection                 Db;
     notepad_dev_db::PublicNote NoteTab;
     Path                       NotesStoragePath;
+    unordered_map<char, bool>  Banned;
 };
 
 State::State() {}
@@ -80,6 +81,23 @@ bool ReadFile( filesystem::path &path, string &content )
     return true;
 }
 
+void SanatizeString( string &str, const unordered_map<char, bool> &banned )
+{
+    string sanatized;
+
+    for ( const char c : str )
+    {
+        if ( banned.find( c )->second )
+        {
+            continue;
+        }
+
+        sanatized += c;
+    }
+
+    str.swap( sanatized );
+}
+
 bool DbMan::InitializeState()
 {
     try
@@ -96,6 +114,9 @@ bool DbMan::InitializeState()
 #endif
 
         g_State.Db = State::Connection( g_State.Config, 5 );
+
+        g_State.Banned = { { '\\', false } };
+
         return true;
     }
     catch ( ... )
@@ -110,8 +131,11 @@ bool DbMan::CreateNewNote( const string &noteName, int64_t ownerId, int64_t *not
     {
         using namespace filesystem;
 
+        string sanatized = noteName;
+        SanatizeString( sanatized, g_State.Banned );
+
         path pathDir  = g_State.NotesStoragePath.string() + "/" + to_string( ownerId );
-        path pathNote = pathDir.string() + "/" + noteName + ".txt";
+        path pathNote = pathDir.string() + "/" + sanatized + ".txt";
 
 
         if ( !filesystem::exists( pathDir ) &&
@@ -148,8 +172,13 @@ bool DbMan::ListNotes( std::vector<std::string> &notes, int64_t ownerId )
         size_t i = 0;
         for ( const auto &n : res )
         {
-            notes[ i ] = n.localPath;
-            notes[ i ] = notes[ i ].substr( notes[ i ].find_last_of( '/' ) + 1 );
+            auto &note = notes[ i ];
+
+            note = n.localPath;
+
+            const auto lastSlash = note.find_last_of( '/' );
+            const auto lastDot   = note.find_last_of( '.' );
+            note                 = note.substr( lastSlash + 1, lastDot - lastSlash - 1 );
         }
 
         return true;
@@ -165,7 +194,11 @@ bool DbMan::ReadNote( const std::string &noteName, int64_t ownerId, std::string 
     try
     {
         using namespace filesystem;
-        path pathNote = g_State.NotesStoragePath.string() + "/" + to_string( ownerId ) + "/" + noteName + ".txt";
+
+        string sanatized = noteName;
+        SanatizeString( sanatized, g_State.Banned );
+
+        path pathNote = g_State.NotesStoragePath.string() + "/" + to_string( ownerId ) + "/" + sanatized + ".txt";
 
         auto &tab = g_State.NoteTab;
         auto  res = g_State.Db.get()( sqlpp::select( tab.localPath )
@@ -190,7 +223,20 @@ bool DbMan::UpdateNote( const std::string &noteName, int64_t ownerId, const std:
     try
     {
         using namespace filesystem;
-        path pathNote = g_State.NotesStoragePath.string() + "/" + to_string( ownerId ) + "/" + noteName + ".txt";
+        string sanatized = noteName;
+        SanatizeString( sanatized, g_State.Banned );
+
+        path pathNote = g_State.NotesStoragePath.string() + "/" + to_string( ownerId ) + "/" + sanatized + ".txt";
+
+        auto &tab = g_State.NoteTab;
+        auto  res = g_State.Db.get()( sqlpp::select( tab.localPath )
+                                          .from( tab )
+                                          .where( tab.ownerId == ownerId and tab.localPath == pathNote.string() ) );
+
+        if ( res.empty() )
+        {
+            return false;
+        }
         return filesystem::exists( pathNote ) && CreateFile( pathNote, content );
     }
     catch ( ... )
@@ -204,7 +250,10 @@ bool DbMan::DeleteNote( const std::string &noteName, int64_t ownerId )
     try
     {
         using namespace filesystem;
-        path pathNote = g_State.NotesStoragePath.string() + "/" + to_string( ownerId ) + "/" + noteName + ".txt";
+        string sanatized = noteName;
+        SanatizeString( sanatized, g_State.Banned );
+
+        path pathNote = g_State.NotesStoragePath.string() + "/" + to_string( ownerId ) + "/" + sanatized + ".txt";
 
         auto &tab = g_State.NoteTab;
         auto  res = g_State.Db.get()( sqlpp::select( tab.localPath )

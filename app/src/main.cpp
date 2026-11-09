@@ -1,43 +1,56 @@
 #include <httplib.h>
-#include <iostream>
 #include <manager.hpp>
-
+#include <single_include/nlohmann/json.hpp>
 
 using namespace std;
 
-int main( int, char *[] )
+void HelloAPI( const httplib::Request &, httplib::Response &res )
 {
-    httplib::Server server;
-    server.Get( "/hi",
-                []( const httplib::Request &, httplib::Response &res )
-                {
-                    res.set_content( "Hello World!", "text/plain" );
-                } );
-    server.listen( "0.0.0.0", 80 );
-
-    return 0;
+    res.set_content( "Hello World!", "text/plain" );
 }
 
-// int main( int, char *[] )
-// {
-//     cout << "Starting" << endl;
-//
-//     DbMan::InitializeState();
-//
-//     vector<string> notes;
-//     string         note;
-//     cout << "Result: " << DbMan::CreateNewNote( "Nowa notatka", 1, nullptr ) << endl;
-//     cout << "Result: " << DbMan::UpdateNote( "Nowa notatka", 1, "Hello skolim" ) << endl;
-//
-//     cout << "Result: " << DbMan::ReadNote( "Nowa notatka", 1, note ) << endl;
-//     cout << note << endl;
-//
-//     cout << "Result: " << DbMan::ListNotes( notes, 1 ) << endl;
-//     for ( const auto &n : notes )
-//     {
-//         cout << n << endl;
-//     }
-//
-//     cout << "Exiting" << endl;
-//     return 0;
-// }
+void ListNotes( const httplib::Request &req, httplib::Response &res )
+{
+    try
+    {
+        if ( req.body.empty() )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+
+        int64_t        ownerId = -1;
+        vector<string> notes;
+        nlohmann::json requestJson( nlohmann::json::parse( req.body ) );
+        nlohmann::json responseJson;
+
+        if ( !requestJson.contains( "ownerId" ) )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+
+        ownerId = requestJson[ "ownerId" ];
+        if ( !DbMan::ListNotes( notes, ownerId ) )
+        {
+            res.status = httplib::Forbidden_403;
+            return;
+        }
+        responseJson[ "notes" ] = notes;
+
+        res.set_content( responseJson.dump(), "application/json" );
+    }
+    catch ( exception &e )
+    {
+        cout << "E: " << e.what() << endl;
+        res.status = httplib::InternalServerError_500;
+        return;
+    }
+}
+
+int main( int, char *[] )
+{
+    DbMan::InitializeState();
+    httplib::Server().Get( "/hi", HelloAPI ).Get( "/list", ListNotes ).listen( "0.0.0.0", 8000 );
+    return 0;
+}

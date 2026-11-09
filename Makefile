@@ -5,13 +5,13 @@ LIB_DATABASE_MANAGER_LIBS_PATHS :=
 LIB_DATABASE_MANAGER_LIBS :=
 LIB_DATABASE_MANAGER_INCLUDE_DIR := database_manager/include
 LIB_DATABASE_MANAGER_SRC_DIR := database_manager/src
-LIB_HTTP_INCLUDE_DIR := cpp-httplib
+LIB_HTTP_INCLUDE_DIR := -I cpp-httplib -I json
 APP_SRC_DIR := app/src
 ifeq ($(DEBUG), 1)
 	BIN_OUT_DIR = bin/debug
 	LIB_OUT_DIR = lib/debug
 	INTERMEDIATE_DIR = intermediate/debug
-	PRE_PROCESSOR_MACROS += -D _DEBUG
+	PRE_PROCESSOR_MACROS = -D _DEBUG
 else
 	BIN_OUT_DIR = bin
 	LIB_OUT_DIR = lib
@@ -72,7 +72,7 @@ $(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile database_manager
 		-c \
 		$(PRE_PROCESSOR_MACROS) \
 		-I $(LIB_DATABASE_MANAGER_INCLUDE_DIR)/ \
-		-I $(LIB_HTTP_INCLUDE_DIR)/ \
+		$(LIB_HTTP_INCLUDE_DIR)/ \
 		$< -o $@
 
 database_manager: $(DATABASE_MANAGER_OBJECTS)
