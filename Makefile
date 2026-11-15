@@ -3,19 +3,19 @@ PRE_PROCESSOR_MACROS :=
 LIB_DATABASE_MANAGER_INCLUDE :=
 LIB_DATABASE_MANAGER_LIBS_PATHS :=
 LIB_DATABASE_MANAGER_LIBS :=
-LIB_DATABASE_MANAGER_INCLUDE_DIR := database_manager/include
-LIB_DATABASE_MANAGER_SRC_DIR := database_manager/src
-LIB_HTTP_INCLUDE_DIR := -I cpp-httplib -I json
+LIB_DATABASE_MANAGER_INCLUDE_DIR := database_manager/include/
+LIB_DATABASE_MANAGER_SRC_DIR := database_manager/src/
+LIB_HTTP_INCLUDE_DIR := -I cpp-httplib/ -I json/
 APP_SRC_DIR := app/src
 ifeq ($(DEBUG), 1)
-	BIN_OUT_DIR = bin/debug
-	LIB_OUT_DIR = lib/debug
-	INTERMEDIATE_DIR = intermediate/debug
+	BIN_OUT_DIR = bin/debug/
+	LIB_OUT_DIR = lib/debug/
+	INTERMEDIATE_DIR = intermediate/debug/
 	PRE_PROCESSOR_MACROS = -D _DEBUG
 else
-	BIN_OUT_DIR = bin
-	LIB_OUT_DIR = lib
-	INTERMEDIATE_DIR = intermediate
+	BIN_OUT_DIR = bin/
+	LIB_OUT_DIR = lib/
+	INTERMEDIATE_DIR = intermediate/
 endif
 
 ENV_DB_NAME := "notepad_dev_db"
@@ -53,7 +53,7 @@ APP_OBJECTS := $(patsubst $(APP_SRC_DIR)/%.cpp, $(INTERMEDIATE_DIR)/%.o, $(APP_S
 run: all
 	$(BIN_OUT_DIR)/application
 
-all: out_dirs application
+all: out_dirs database_manager application
 
 run_debug: 
 	DEBUG=1 make run
@@ -67,12 +67,12 @@ application: $(APP_OBJECTS)
 		-ldatabase_manager -Wl,-rpath,$(LIB_OUT_DIR) \
 		$^ -o $(BIN_OUT_DIR)/$@
 
-$(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile database_manager
+$(INTERMEDIATE_DIR)/%.o: $(APP_SRC_DIR)/%.cpp Makefile 
 	$(CXX) $(CXXFLAGS) \
 		-c \
 		$(PRE_PROCESSOR_MACROS) \
-		-I $(LIB_DATABASE_MANAGER_INCLUDE_DIR)/ \
-		$(LIB_HTTP_INCLUDE_DIR)/ \
+		-I $(LIB_DATABASE_MANAGER_INCLUDE_DIR) \
+		$(LIB_HTTP_INCLUDE_DIR) \
 		$< -o $@
 
 database_manager: $(DATABASE_MANAGER_OBJECTS)
@@ -87,8 +87,8 @@ $(INTERMEDIATE_DIR)/%.o: $(LIB_DATABASE_MANAGER_SRC_DIR)/%.cpp Makefile
 		-c \
 		-fPIC \
 		$(PRE_PROCESSOR_MACROS) \
-		-I $(LIB_DATABASE_MANAGER_INCLUDE)/ \
-		-I $(LIB_DATABASE_MANAGER_INCLUDE_DIR)/ \
+		-I $(LIB_DATABASE_MANAGER_INCLUDE) \
+		-I $(LIB_DATABASE_MANAGER_INCLUDE_DIR) \
 		-D_LIB_WITH_STATE_EXPORTS \
 		$< -o $@
 

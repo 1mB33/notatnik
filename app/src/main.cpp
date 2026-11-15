@@ -9,6 +9,53 @@ void HelloAPI( const httplib::Request &, httplib::Response &res )
     res.set_content( "Hello World!", "text/plain" );
 }
 
+void CreateNote( const httplib::Request &req, httplib::Response &res )
+{
+    try
+    {
+        if ( req.body.empty() )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+
+        int64_t        ownerId  = -1;
+        string         noteName = {};
+        int64_t        noteId   = -1;
+        nlohmann::json requestJson( nlohmann::json::parse( req.body ) );
+        nlohmann::json responseJson;
+
+        if ( !requestJson.contains( "ownerId" ) )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+
+        ownerId = requestJson[ "ownerId" ];
+        if ( !requestJson.contains( "noteName" ) )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+
+        ownerId = requestJson[ "noteName" ];
+        if ( !DbMan::CreateNewNote( noteName, ownerId, &noteId ) )
+        {
+            res.status = httplib::Forbidden_403;
+            return;
+        }
+        responseJson[ "noteId" ] = noteId;
+
+        res.set_content( responseJson.dump(), "application/json" );
+    }
+    catch ( exception &e )
+    {
+        cout << "E: " << e.what() << endl;
+        res.status = httplib::InternalServerError_500;
+        return;
+    }
+}
+
 void ListNotes( const httplib::Request &req, httplib::Response &res )
 {
     try
