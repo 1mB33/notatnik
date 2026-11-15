@@ -1,0 +1,51 @@
+services:
+  proxy:
+    image: traefik:v3.6
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: notepad_dev_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database_manager/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U dev -d notepad_dev_db"]
+      interval: 5s
+      retries: 10
+  app-backend:
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_USER: dev
+      DB_PASSWORD: dev
+      DB_NAME: notepad_dev_db
+    build:
+      context: ./
+      target: run_app
+    develop:
+      watch:
+        - path: ./app/src
+          action: rebuild
+        - path: ./database_manager/src
+          action: rebuild
+        - path: ./Makefile
+          action: rebuild
+    labels:
+      traefik.http.routers.backend.rule: Host(`localhost`) && PathPrefix(`/api`)
+      traefik.http.services.backend.loadbalancer.server.port: 8000
+      traefik.http.middlewares.strip-api.stripprefix.prefixes: /api
+      traefik.http.routers.backend.middlewares: strip-api
+volumes:
+  pgdata:

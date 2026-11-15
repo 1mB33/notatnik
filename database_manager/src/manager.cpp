@@ -16,6 +16,23 @@
 
 using namespace std;
 
+#if defined( _DEBUG )
+inline void debugLog( const string &msg )
+{
+    cout << msg << endl;
+}
+#else
+
+inline void debugLog( const string & ) {}
+
+#endif // defined (_DEBUG)
+
+static std::string env_or( const char *name, const char *fallback )
+{
+    const char *v = std::getenv( name );
+    return v ? v : fallback;
+}
+
 struct State
 {
     using Connection        = sqlpp::postgresql::connection_pool;
@@ -87,7 +104,9 @@ void SanatizeString( string &str, const unordered_map<char, bool> &banned )
 
     for ( const char c : str )
     {
-        if ( banned.find( c )->second )
+        const auto bannedC = banned.find( c );
+
+        if ( bannedC != banned.end() && bannedC->second )
         {
             continue;
         }
@@ -106,12 +125,11 @@ bool DbMan::InitializeState()
 
         g_State.Config = make_shared<sqlpp::postgresql::connection_config>();
 
-        g_State.Config->dbname   = "notepad_dev_db";
-        g_State.Config->user     = "dev";
-        g_State.Config->password = "dev";
-#if defined( _DEBUG )
-        g_State.Config->debug = true;
-#endif
+        g_State.Config->host     = env_or( "DB_HOST", "127.0.0.1" );
+        g_State.Config->dbname   = env_or( "DB_NAME", "notepad_dev_db" );
+        g_State.Config->user     = env_or( "DB_USER", "dev" );
+        g_State.Config->password = env_or( "DB_PASSWORD", "dev" );
+        g_State.Config->debug    = true;
 
         g_State.Db = State::Connection( g_State.Config, 5 );
 
@@ -129,25 +147,31 @@ bool DbMan::CreateNewNote( const string &noteName, int64_t ownerId, int64_t *not
 {
     try
     {
+        debugLog( "creating new note" );
         using namespace filesystem;
 
+        debugLog( "sanatizing" );
         string sanatized = noteName;
         SanatizeString( sanatized, g_State.Banned );
 
+        debugLog( "path create" );
         path pathDir  = g_State.NotesStoragePath.string() + "/" + to_string( ownerId );
         path pathNote = pathDir.string() + "/" + sanatized + ".txt";
 
 
+        debugLog( "file check" );
         if ( !filesystem::exists( pathDir ) &&
              ( !filesystem::create_directory( pathDir ) || !CreateFile( pathNote, "" ) ) )
         {
             return false;
         }
 
+        debugLog( "db call" );
         auto &tab = g_State.NoteTab;
         auto  res = g_State.Db.get()( sqlpp::postgresql::insert_into( tab )
                                           .set( tab.localPath = pathNote.string(), tab.ownerId = ownerId )
                                           .returning( tab.id ) );
+        debugLog( "result" );
         if ( noteId )
         {
             *noteId = res.front().id.value();
@@ -172,7 +196,7 @@ bool DbMan::ListNotes( std::vector<std::string> &notes, int64_t ownerId )
         size_t i = 0;
         for ( const auto &n : res )
         {
-            auto &note = notes[ i ];
+            auto &note = notes[ i++ ];
 
             note = n.localPath;
 
@@ -183,8 +207,9 @@ bool DbMan::ListNotes( std::vector<std::string> &notes, int64_t ownerId )
 
         return true;
     }
-    catch ( ... )
+    catch ( exception &e )
     {
+        cerr << e.what() << endl;
         return false;
     }
 }
