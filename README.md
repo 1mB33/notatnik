@@ -5,3 +5,10 @@
 - postgresql
 - g++
 - make
+
+
+## Runing from docker container
+```sh
+docker compose build 
+docker compose up
+```
