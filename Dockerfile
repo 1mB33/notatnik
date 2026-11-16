@@ -15,7 +15,25 @@ RUN make
 
 FROM ubuntu:24.04 AS run_app
 RUN apt-get update && apt-get install -y --no-install-recommends libpq5
-COPY --from=build_app /build/bin/application /app
-COPY --from=build_app /build/lib /lib
+COPY --from=build_app /build/bin/application /backend/app
+COPY --from=build_app /build/lib /backend/lib
 EXPOSE 8000
-CMD [ "/app" ]
+WORKDIR /backend
+CMD [ "./app" ]
+
+FROM node:22 AS base
+
+FROM base AS client-base
+ADD frontend/package.json /frontend/package.json
+ADD frontend/package-lock.json /frontend/package-lock.json
+ADD frontend/tsconfig.json  /frontend/tsconfig.json
+ADD frontend/next.config.ts  /frontend/next.config.ts
+ADD frontend/eslint.config.mjs  /frontend/eslint.config.mjs
+ADD frontend/public  /frontend/public
+ADD frontend/app  /frontend/app
+WORKDIR /frontend
+RUN npm install
+
+FROM client-base AS client-dev
+WORKDIR /frontend
+CMD ["npm", "run", "dev"]

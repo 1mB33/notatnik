@@ -217,7 +217,7 @@ int main( int, char *[] )
         []()
         {
             DbMan::InitializeState();
-            if ( httplib::Server()
+            if ( !httplib::Server()
                      .set_logger(
                          []( const httplib::Request &req, const httplib::Response &res )
                          {
