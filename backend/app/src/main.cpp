@@ -181,10 +181,10 @@ void ListNotes( const httplib::Request &req, httplib::Response &res )
             return;
         }
 
-        int64_t        ownerId = -1;
+        int64_t                        ownerId = -1;
         unordered_map<string, int64_t> notes;
-        nlohmann::json requestJson( nlohmann::json::parse( req.body ) );
-        nlohmann::json responseJson;
+        nlohmann::json                 requestJson( nlohmann::json::parse( req.body ) );
+        nlohmann::json                 responseJson;
 
         if ( !requestJson.contains( "ownerId" ) )
         {
@@ -225,9 +225,9 @@ int main( int, char *[] )
                          } )
                      .Get( "/hi", HelloAPI )
                      .Post( "/create", CreateNote )
-                     .Get( "/read", ReadNote )
+                     .Post( "/read", ReadNote )
                      .Patch( "/update", UpdateNote )
-                     .Get( "/list", ListNotes )
+                     .Post( "/list", ListNotes )
                      .listen( "0.0.0.0", 8000, 0 ) )
             {
                 cerr << "listen failed" << endl;

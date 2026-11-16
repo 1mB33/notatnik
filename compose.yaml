@@ -17,7 +17,7 @@ services:
       POSTGRES_DB: notepad_dev_db
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./database_manager/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./backend/database_manager/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U dev -d notepad_dev_db"]
       interval: 5s
@@ -35,14 +35,14 @@ services:
       context: ./
       target: run_app
     volumes:
-      - notesdata:/var/lib/postgresql/data
+      - notesdata:/var/lib/notes/data
     develop:
       watch:
-        - path: ./app/src
+        - path: ./backend/app/src
           action: rebuild
-        - path: ./database_manager/src
+        - path: ./backend/database_manager/src
           action: rebuild
-        - path: ./Makefile
+        - path: ./backend/Makefile
           action: rebuild
     labels:
       traefik.http.routers.backend.rule: Host(`localhost`) && PathPrefix(`/api`)

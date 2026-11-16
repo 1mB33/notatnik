@@ -81,7 +81,7 @@ bool ReadFile( const filesystem::path &path, string &content )
     ifstream file( path, ios::ate );
     if ( !file.is_open() || file.bad() )
     {
-        debugLog("isnt open, or bad");
+        debugLog( "isnt open, or bad" );
         return false;
     }
     const auto fileEnd = file.tellg();
@@ -94,7 +94,7 @@ bool ReadFile( const filesystem::path &path, string &content )
     file.close();
     if ( file.bad() )
     {
-        debugLog("is bad at the end");
+        debugLog( "is bad at the end" );
         return false;
     }
     return true;
@@ -123,7 +123,7 @@ bool DbMan::InitializeState()
 {
     try
     {
-        g_State.NotesStoragePath = "/var/lib/notes/data";
+        g_State.NotesStoragePath = "/var/lib/notes/data/";
 
         g_State.Config = make_shared<sqlpp::postgresql::connection_config>();
 
@@ -172,13 +172,20 @@ bool DbMan::CreateNewNote( const string &noteName, int64_t ownerId, int64_t *not
         debugLog( sanatized );
 
         debugLog( "path create" );
-        path pathDir  = g_State.NotesStoragePath.string() + "/" + to_string( ownerId );
+        path pathDir  = g_State.NotesStoragePath.string() + to_string( ownerId );
         path pathNote = pathDir.string() + "/" + sanatized + ".txt";
+        debugLog( pathDir );
+        debugLog( pathNote );
 
 
         debugLog( "file check" );
-        if ( !filesystem::exists( pathDir ) &&
-             ( !filesystem::create_directory( pathDir ) || !CreateFile( pathNote, "" ) ) )
+        filesystem::create_directories( pathDir );
+        if ( !filesystem::exists( pathDir ) )
+        {
+            debugLog( "file not exists" );
+            return false;
+        }
+        if ( !CreateFile( pathNote, "" ) )
         {
             return false;
         }
@@ -195,8 +202,9 @@ bool DbMan::CreateNewNote( const string &noteName, int64_t ownerId, int64_t *not
         }
         return true;
     }
-    catch ( ... )
+    catch ( const exception &e )
     {
+        debugLog( e.what() );
         return false;
     }
 }
@@ -206,7 +214,8 @@ bool DbMan::ListNotes( unordered_map<string, int64_t> &notes, int64_t ownerId )
     try
     {
         auto &tab = g_State.NoteTab;
-        auto  res = g_State.Db.get()( sqlpp::select( tab.localPath, tab.id ).from( tab ).where( tab.ownerId == ownerId ) );
+        auto  res =
+            g_State.Db.get()( sqlpp::select( tab.localPath, tab.id ).from( tab ).where( tab.ownerId == ownerId ) );
 
         for ( const auto &n : res )
         {
@@ -235,9 +244,8 @@ bool DbMan::ReadNote( int64_t noteId, int64_t ownerId, std::string &content )
 
 
         auto &tab = g_State.NoteTab;
-        auto  res = g_State.Db.get()( sqlpp::select( tab.localPath )
-                                          .from( tab )
-                                          .where( tab.ownerId == ownerId and tab.id == noteId ) );
+        auto  res = g_State.Db.get()(
+            sqlpp::select( tab.localPath ).from( tab ).where( tab.ownerId == ownerId and tab.id == noteId ) );
 
         if ( res.empty() )
         {
@@ -245,15 +253,15 @@ bool DbMan::ReadNote( int64_t noteId, int64_t ownerId, std::string &content )
             return false;
         }
         debugLog( res.front().localPath.value() );
-        
+
         const auto doesExsists = filesystem::exists( res.front().localPath.value() );
-        debugLog(string() + static_cast<char>(('0' + doesExsists)));
+        debugLog( string() + static_cast<char>( ( '0' + doesExsists ) ) );
 
         return doesExsists && ReadFile( filesystem::path( res.front().localPath.value() ), content );
     }
-    catch ( const exception& e )
+    catch ( const exception &e )
     {
-        debugLog(e.what());
+        debugLog( e.what() );
         return false;
     }
 }
@@ -264,18 +272,17 @@ bool DbMan::UpdateNote( int64_t noteId, int64_t ownerId, const std::string &cont
     {
         using namespace filesystem;
         auto &tab = g_State.NoteTab;
-        auto  res = g_State.Db.get()( sqlpp::select( tab.localPath )
-                                          .from( tab )
-                                          .where( tab.ownerId == ownerId and tab.id == noteId ) );
+        auto  res = g_State.Db.get()(
+            sqlpp::select( tab.localPath ).from( tab ).where( tab.ownerId == ownerId and tab.id == noteId ) );
 
         if ( res.empty() )
         {
-            debugLog("sql: empty");
+            debugLog( "sql: empty" );
             return false;
         }
-        debugLog(res.front().localPath.value());
+        debugLog( res.front().localPath.value() );
         return filesystem::exists( res.front().localPath.value() ) &&
-               CreateFile( filesystem::path(res.front().localPath.value()), content );
+               CreateFile( filesystem::path( res.front().localPath.value() ), content );
     }
     catch ( ... )
     {
