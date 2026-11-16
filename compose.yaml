@@ -2,16 +2,23 @@ services:
   proxy:
     image: traefik:v3.6
     command:
-      - "--api.insecure=true"
       - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=proxy"
       - "--entrypoints.web.address=:80"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
     ports:
-      - 80:80
-      - 8080:8080
+      - "80:80"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   db:
     image: postgres:17
+    restart: unless-stopped
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
@@ -20,27 +27,33 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./backend/database_manager/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U dev -d notepad_dev_db"]
+      test:
+        - CMD-SHELL
+        - pg_isready -h 127.0.0.1 -U dev -d notepad_dev_db
       interval: 5s
+      timeout: 5s
       retries: 10
+
   app-frontend:
     build:
       context: ./
-      target: client-dev
-    develop:
-      watch:
-        - path: ./frontend/app
-          action: sync
-          target: /frontend/app
-        - path: ./frontend/public
-          action: sync
-          target: /frontend/public
-        - path: ./frontend/package.json
-          action: rebuild
+      target: frontend-run
+    restart: unless-stopped
+    networks:
+      - proxy
     labels:
-      traefik.http.routers.client.rule: Host(`localhost`)
-      traefik.http.services.client.loadbalancer.server.port: 3000
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.client.rule: PathPrefix(`/`)
+      traefik.http.routers.client.entrypoints: web
+      traefik.http.routers.client.priority: "1"
+      traefik.http.services.client.loadbalancer.server.port: "3000"
+
   app-backend:
+    build:
+      context: ./
+      target: run_app
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -49,24 +62,26 @@ services:
       DB_USER: dev
       DB_PASSWORD: dev
       DB_NAME: notepad_dev_db
-    build:
-      context: ./
-      target: run_app
     volumes:
       - notesdata:/var/lib/notes/data
-    develop:
-      watch:
-        - path: ./backend/app/src
-          action: rebuild
-        - path: ./backend/database_manager/src
-          action: rebuild
-        - path: ./backend/Makefile
-          action: rebuild
+    networks:
+      - default
+      - proxy
     labels:
-      traefik.http.routers.backend.rule: Host(`localhost`) && PathPrefix(`/api`)
-      traefik.http.services.backend.loadbalancer.server.port: 8000
-      traefik.http.middlewares.strip-api.stripprefix.prefixes: /api
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.backend.rule: PathPrefix(`/api`)
+      traefik.http.routers.backend.entrypoints: web
+      traefik.http.routers.backend.priority: "10"
       traefik.http.routers.backend.middlewares: strip-api
+      traefik.http.middlewares.strip-api.stripprefix.prefixes: /api
+      traefik.http.services.backend.loadbalancer.server.port: "8000"
+
 volumes:
   pgdata:
   notesdata:
+
+networks:
+  proxy:
+    name: proxy
+    driver: bridge

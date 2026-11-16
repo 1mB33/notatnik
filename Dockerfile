@@ -23,7 +23,7 @@ CMD [ "./app" ]
 
 FROM node:22 AS base
 
-FROM base AS client-base
+FROM base AS frontend-base
 ADD frontend/package.json /frontend/package.json
 ADD frontend/package-lock.json /frontend/package-lock.json
 ADD frontend/tsconfig.json  /frontend/tsconfig.json
@@ -33,7 +33,8 @@ ADD frontend/public  /frontend/public
 ADD frontend/app  /frontend/app
 WORKDIR /frontend
 RUN npm install
+RUN npm run build
 
-FROM client-base AS client-dev
+FROM frontend-base AS frontend-run
 WORKDIR /frontend
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]
