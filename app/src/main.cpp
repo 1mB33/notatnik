@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <httplib.h>
 #include <manager.hpp>
 #include <single_include/nlohmann/json.hpp>
@@ -70,6 +71,106 @@ void CreateNote( const httplib::Request &req, httplib::Response &res )
     }
 }
 
+void ReadNote( const httplib::Request &req, httplib::Response &res )
+{
+    try
+    {
+        if ( req.body.empty() )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+
+        int64_t        noteId  = -1;
+        int64_t        ownerId = -1;
+        string         noteContent;
+        nlohmann::json requestJson( nlohmann::json::parse( req.body ) );
+        nlohmann::json responseJson;
+
+        if ( !requestJson.contains( "ownerId" ) )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+        ownerId = requestJson[ "ownerId" ];
+
+        if ( !requestJson.contains( "noteId" ) )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+        noteId = requestJson[ "noteId" ];
+
+        if ( !DbMan::ReadNote( noteId, ownerId, noteContent ) )
+        {
+            res.status = httplib::InternalServerError_500;
+            return;
+        }
+        responseJson[ "noteContent" ] = noteContent;
+
+        res.set_content( responseJson.dump(), "application/json" );
+    }
+    catch ( exception &e )
+    {
+        cout << "E: " << e.what() << endl;
+        res.status = httplib::InternalServerError_500;
+        return;
+    }
+}
+
+void UpdateNote( const httplib::Request &req, httplib::Response &res )
+{
+    try
+    {
+        if ( req.body.empty() )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+
+        int64_t        noteId  = -1;
+        int64_t        ownerId = -1;
+        string         noteContent;
+        nlohmann::json requestJson( nlohmann::json::parse( req.body ) );
+        nlohmann::json responseJson;
+
+        if ( !requestJson.contains( "ownerId" ) )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+        ownerId = requestJson[ "ownerId" ];
+
+        if ( !requestJson.contains( "noteId" ) )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+        noteId = requestJson[ "noteId" ];
+
+        if ( !requestJson.contains( "noteContent" ) )
+        {
+            res.status = httplib::BadRequest_400;
+            return;
+        }
+        noteContent = requestJson[ "noteContent" ];
+
+        if ( !DbMan::UpdateNote( noteId, ownerId, noteContent ) )
+        {
+            res.status = httplib::InternalServerError_500;
+            return;
+        }
+
+        res.set_content( responseJson.dump(), "application/json" );
+    }
+    catch ( exception &e )
+    {
+        cout << "E: " << e.what() << endl;
+        res.status = httplib::InternalServerError_500;
+        return;
+    }
+}
+
 void ListNotes( const httplib::Request &req, httplib::Response &res )
 {
     try
@@ -81,7 +182,7 @@ void ListNotes( const httplib::Request &req, httplib::Response &res )
         }
 
         int64_t        ownerId = -1;
-        vector<string> notes;
+        unordered_map<string, int64_t> notes;
         nlohmann::json requestJson( nlohmann::json::parse( req.body ) );
         nlohmann::json responseJson;
 
@@ -124,6 +225,8 @@ int main( int, char *[] )
                          } )
                      .Get( "/hi", HelloAPI )
                      .Post( "/create", CreateNote )
+                     .Get( "/read", ReadNote )
+                     .Patch( "/update", UpdateNote )
                      .Get( "/list", ListNotes )
                      .listen( "0.0.0.0", 8000, 0 ) )
             {
