@@ -35,7 +35,7 @@ services:
       context: ./
       target: run_app
     volumes:
-      - notesdata:/var/lib/notes/data
+      - notesdata:/var/lib/postgresql/data
     develop:
       watch:
         - path: ./app/src
