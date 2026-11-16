@@ -108,7 +108,7 @@ void SanatizeString( string &str, const unordered_map<char, bool> &banned )
     {
         const auto bannedC = banned.find( c );
 
-        if ( bannedC != banned.end() && bannedC->second )
+        if ( bannedC != banned.end() && !bannedC->second )
         {
             continue;
         }
@@ -135,9 +135,21 @@ bool DbMan::InitializeState()
 
         g_State.Db = State::Connection( g_State.Config, 5 );
 
-        g_State.Banned = { { '\\', false } };
+        g_State.Banned = {
+            { '\'', false },
+            { '\"', false },
+            { '\?', false },
+            { '\\', false },
+            { '\a', false },
+            { '\b', false },
+            { '\f', false },
+            { '\n', false },
+            { '\r', false },
+            { '\t', false },
+            { '\v', false },
+        };
 
-        filesystem::create_directories(g_State.NotesStoragePath);
+        filesystem::create_directories( g_State.NotesStoragePath );
 
         return true;
     }
@@ -157,6 +169,7 @@ bool DbMan::CreateNewNote( const string &noteName, int64_t ownerId, int64_t *not
         debugLog( "sanatizing" );
         string sanatized = noteName;
         SanatizeString( sanatized, g_State.Banned );
+        debugLog( sanatized );
 
         debugLog( "path create" );
         path pathDir  = g_State.NotesStoragePath.string() + "/" + to_string( ownerId );
