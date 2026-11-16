@@ -11,7 +11,8 @@ export default function Note() {
 
     const fit = React.useCallback(() => {
         const el = textareaRef.current;
-        if (!el) return;
+        if (!el) 
+            return;
         el.style.height = "auto";
         el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
     }, []);
@@ -35,14 +36,17 @@ export default function Note() {
                     signal: controller.signal,
                 });
 
-                if (response.status === 404) return setStatus("missing");
-                if (!response.ok) return setStatus("error");
+                if (response.status === 404) 
+                    return setStatus("missing");
+                if (!response.ok) 
+                    return setStatus("error");
 
                 const data = await response.json();
                 setContent(data?.noteContent ?? "");
                 setStatus("ready");
             } catch (err) {
-                if ((err as Error).name !== "AbortError") setStatus("error");
+                if ((err as Error).name !== "AbortError") 
+                    setStatus("error");
             }
         })();
 
@@ -53,9 +57,12 @@ export default function Note() {
         alert('clicked save :)');
     }
 
-    if (status === "loading") return <span>...</span>;
-    if (status === "missing") return <span>nie ma</span>;
-    if (status === "error") return <span>błąd</span>;
+    if (status === "loading") 
+        return <span>...</span>;
+    if (status === "missing") 
+        return <span>nie ma</span>;
+    if (status === "error") 
+        return <span>błąd</span>;
 
     return (
         <div className="pt-10 pb-10">
