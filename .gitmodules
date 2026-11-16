@@ -1,9 +1,9 @@
 [submodule "cpp-httplib"]
-	path = cpp-httplib
+	path = backend/deps/cpp-httplib
 	url = https://github.com/yhirose/cpp-httplib.git
 [submodule "json"]
-	path = json
+	path = backend/deps/json
 	url = https://github.com/nlohmann/json.git
 [submodule "sqlpp11"]
-	path = sqlpp11
+	path = backend/deps/sqlpp11
 	url = https://github.com/rbock/sqlpp11
