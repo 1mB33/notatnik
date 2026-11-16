@@ -54,7 +54,29 @@ export default function Note() {
     }, []);
 
     function handleSave() {
-        alert('clicked save :)');
+        const controller = new AbortController();
+
+        (async () => {
+            try {
+                let response = await fetch("/api/update", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ownerId: 1, noteId: 81, noteContent: content }),
+                    signal: controller.signal,
+                });
+
+                if (response.ok) {
+                    alert("saved")
+                } else {
+                    alert("error")
+                }
+            } catch (err) {
+                if ((err as Error).name !== "AbortError") 
+                    setStatus("error");
+            }
+        })();
+
+        return () => controller.abort();
     }
 
     if (status === "loading") 
@@ -73,7 +95,7 @@ export default function Note() {
                 onChange={(e) => setContent(e.target.value)}
                 className="box-border w-full resize-none overflow-hidden border-none outline-none"
             />
-            <button className="pt-5 block" type="button" onClick={handleSave}>
+            <button className="mt-5 p-1 plock hover:bg-sky-700 active:bg-amber-950" type="button" onClick={handleSave}>
                 save
             </button>
         </div>
