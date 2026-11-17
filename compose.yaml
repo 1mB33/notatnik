@@ -34,31 +34,6 @@ services:
       timeout: 5s
       retries: 10
 
-  app-frontend:
-    build:
-      context: ./
-      target: frontend-run
-    restart: unless-stopped
-    develop:
-      watch:
-        - path: ./frontend/app
-          action: sync
-          target: /frontend/app
-        - path: ./frontend/public
-          action: sync
-          target: /frontend/public
-        - path: ./frontend/package.json
-          action: rebuild
-    networks:
-      - proxy
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: proxy
-      traefik.http.routers.client.rule: PathPrefix(`/`)
-      traefik.http.routers.client.entrypoints: web
-      traefik.http.routers.client.priority: "1"
-      traefik.http.services.client.loadbalancer.server.port: "3000"
-
   app-backend:
     build:
       context: ./
@@ -90,10 +65,35 @@ services:
       traefik.docker.network: proxy
       traefik.http.routers.backend.rule: PathPrefix(`/api`)
       traefik.http.routers.backend.entrypoints: web
-      traefik.http.routers.backend.priority: "10"
+      traefik.http.routers.backend.priority: "1000"
       traefik.http.routers.backend.middlewares: strip-api
       traefik.http.middlewares.strip-api.stripprefix.prefixes: /api
       traefik.http.services.backend.loadbalancer.server.port: "8000"
+
+  app-frontend:
+    build:
+      context: ./
+      target: frontend-run
+    restart: unless-stopped
+    develop:
+      watch:
+        - path: ./frontend/app
+          action: sync
+          target: /frontend/app
+        - path: ./frontend/public
+          action: sync
+          target: /frontend/public
+        - path: ./frontend/package.json
+          action: rebuild
+    networks:
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.client.rule: PathPrefix(`/`)
+      traefik.http.routers.client.entrypoints: web
+      traefik.http.routers.client.priority: "1"
+      traefik.http.services.client.loadbalancer.server.port: "3000"
 
 volumes:
   pgdata:
@@ -101,3 +101,5 @@ volumes:
 
 networks:
   proxy:
+    name: proxy
+    driver: bridge
