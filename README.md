@@ -5,6 +5,7 @@
 - postgresql
 - g++
 - make
+- node
 
 
 ## Runing from docker container
