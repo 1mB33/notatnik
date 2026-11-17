@@ -24,14 +24,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
             <body className="min-h-full flex flex-col">
-                <header className="flex justify-center">
-                    <p>header</p>
+                <header className="flex py-5 justify-center">
+                    <h1 className="text-5xl">notatnik</h1>
                 </header>
                 <main className="flex justify-center">
                     {children}
                 </main>
                 <footer className="flex justify-center">
-                    <p>footer</p>
+                    <div className="w-3/4 flex justify-end m-w">
+                        <p className="p-10 text-xs">notatnik 2026</p>
+                    </div>
                 </footer>
             </body>
         </html>

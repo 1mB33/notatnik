@@ -39,6 +39,16 @@ services:
       context: ./
       target: frontend-run
     restart: unless-stopped
+    develop:
+      watch:
+        - path: ./frontend/app
+          action: sync
+          target: /frontend/app
+        - path: ./frontend/public
+          action: sync
+          target: /frontend/public
+        - path: ./frontend/package.json
+          action: rebuild
     networks:
       - proxy
     labels:
@@ -57,6 +67,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    develop:
+      watch:
+        - path: ./backend/app/src
+          action: rebuild
+        - path: ./backend/database_manager/src
+          action: rebuild
+        - path: ./backend/Makefile
+          action: rebuild
     environment:
       DB_HOST: db
       DB_USER: dev
@@ -83,5 +101,3 @@ volumes:
 
 networks:
   proxy:
-    name: proxy
-    driver: bridge

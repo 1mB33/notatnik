@@ -4,15 +4,20 @@ import React from "react";
 
 type Status = "loading" | "ready" | "missing" | "error";
 
-export default function Note() {
-    const [content, setContent] = React.useState("");
-    const [status, setStatus] = React.useState<Status>("loading");
-    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+export interface INote {
+    noteId: number,
+}
+
+export default function Note({ noteId }: INote) {
+    const [content, setContent]     = React.useState("");
+    const [status, setStatus]       = React.useState<Status>("loading");
+    const textareaRef               = React.useRef<HTMLTextAreaElement>(null);
 
     const fit = React.useCallback(() => {
         const el = textareaRef.current;
-        if (!el) 
+        if (!el) {
             return;
+        }
         el.style.height = "auto";
         el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
     }, []);
@@ -32,36 +37,37 @@ export default function Note() {
                 const response = await fetch("/api/read", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ownerId: 1, noteId: 81 }),
+                    body: JSON.stringify({ ownerId: 1, noteId: noteId }),
                     signal: controller.signal,
                 });
 
-                if (response.status === 404) 
+                if (response.status === 404) {
                     return setStatus("missing");
-                if (!response.ok) 
+                }
+                if (!response.ok) {
                     return setStatus("error");
+                }
 
                 const data = await response.json();
                 setContent(data?.noteContent ?? "");
                 setStatus("ready");
             } catch (err) {
-                if ((err as Error).name !== "AbortError") 
-                    setStatus("error");
+                setStatus("error");
             }
         })();
 
         return () => controller.abort();
-    }, []);
+    }, [noteId]);
 
     function handleSave() {
         const controller = new AbortController();
 
         (async () => {
             try {
-                let response = await fetch("/api/update", {
+                const response = await fetch("/api/update", {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ownerId: 1, noteId: 81, noteContent: content }),
+                    body: JSON.stringify({ ownerId: 1, noteId: noteId, noteContent: content }),
                     signal: controller.signal,
                 });
 
@@ -71,33 +77,38 @@ export default function Note() {
                     alert("error")
                 }
             } catch (err) {
-                if ((err as Error).name !== "AbortError") 
-                    setStatus("error");
+                setStatus("error");
             }
         })();
 
         return () => controller.abort();
     }
 
-    if (status === "loading") 
+    if (noteId === -1) {
+        return <span>not selected</span>;
+    }
+    if (status === "loading") {
         return <span>...</span>;
-    if (status === "missing") 
-        return <span>nie ma</span>;
-    if (status === "error") 
-        return <span>błąd</span>;
+    }
+    if (status === "missing") {
+        return <span>missing</span>;
+    }
+    if (status === "error") {
+        return <span>error</span>;
+    }
 
     return (
-        <div className="pt-10 pb-10">
+        <span className="pt-10 pb-10 w-3/4 inline-block">
             <textarea
                 ref={textareaRef}
                 rows={1}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="box-border w-full resize-none overflow-hidden border-none outline-none"
+                className="box-border w-full resize-none overflow-hidden border-none outline-none py-5 px-10 bg-cyan-950"
             />
-            <button className="mt-5 p-1 plock hover:bg-sky-700 active:bg-amber-950" type="button" onClick={handleSave}>
+            <button className="mt-5 p-1 hover:bg-sky-700 active:bg-amber-950" type="button" onClick={handleSave}>
                 save
             </button>
-        </div>
+        </span>
     );
 }
