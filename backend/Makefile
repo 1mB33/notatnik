@@ -5,7 +5,7 @@ LIB_DATABASE_MANAGER_LIBS_PATHS :=
 LIB_DATABASE_MANAGER_LIBS :=
 LIB_DATABASE_MANAGER_INCLUDE_DIR := database_manager/include/
 LIB_DATABASE_MANAGER_SRC_DIR := database_manager/src/
-LIB_HTTP_INCLUDE_DIR := -I cpp-httplib/ -I json/
+LIB_HTTP_INCLUDE_DIR := -I deps/cpp-httplib/ -I deps/json/
 APP_SRC_DIR := app/src
 ifeq ($(DEBUG), 1)
 	BIN_OUT_DIR = bin/debug/
